@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catatan Penjualan Produk</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: #f4f6f9;
+    color: #2c3e50;
+    padding: 16px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: #7f8c8d; font-size: .9rem; margin-bottom: 16px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 18px; border: none; border-radius: 8px;
+    background: #e4e9f0; cursor: pointer; font-size: .95rem; font-weight: 600;
+    color: #576574; transition: .2s;
+  }
+  .tab-btn.active { background: #2980b9; color: #fff; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: #fff; border-radius: 12px; padding: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.1rem; margin-bottom: 12px; color: #2c3e50; }
+
+  /* Form */
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+  label { font-size: .85rem; font-weight: 600; color: #576574; display: block; margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid #dcdde1;
+    border-radius: 8px; font-size: .95rem; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #74b9ff; border-color: #74b9ff; }
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: .95rem; transition: .2s;
+  }
+  .btn-primary { background: #2980b9; color: #fff; }
+  .btn-primary:hover { background: #216a94; }
+  .btn-success { background: #27ae60; color: #fff; }
+  .btn-success:hover { background: #1f8b4d; }
+  .btn-danger { background: #e74c3c; color: #fff; padding: 6px 12px; font-size: .8rem; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-small { padding: 5px 10px; font-size: .8rem; }
+  .btn-warn { background: #f39c12; color: #fff; }
+  .btn-warn:hover { background: #d68910; }
+  .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { padding: 9px 8px; text-align: left; border-bottom: 1px solid #ecf0f1; vertical-align: top; }
+  th { background: #f8fafc; font-size: .8rem; text-transform: uppercase; color: #7f8c8d; }
+  tr:hover td { background: #fafbfc; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: .75rem; font-weight: 700;
+  }
+  .badge-lunas { background: #d4efdf; color: #1e8449; }
+  .badge-tanggungan { background: #fdebd0; color: #b9770e; }
+  .badge-sebagian { background: #d6eaf8; color: #2471a3; }
+
+  .empty { text-align: center; color: #95a5a6; padding: 24px; font-style: italic; }
+  .summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .summary .box {
+    flex: 1; min-width: 140px; background: #fff; border-radius: 10px; padding: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .summary .box .label { font-size: .78rem; color: #7f8c8d; text-transform: uppercase; }
+  .summary .box .value { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
+  .value.red { color: #e74c3c; }
+  .value.green { color: #27ae60; }
+  .value.blue { color: #2980b9; }
+
+  .hint { font-size: .78rem; color: #95a5a6; margin-top: 4px; }
+  .coords-row { display: flex; gap: 8px; align-items: flex-end; }
+  .coords-row input { flex: 1; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    table { font-size: .8rem; }
+    th, td { padding: 6px 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📒 Catatan Penjualan Produk</h1>
+  <p class="subtitle">Kelola pelanggan, produk, dan status tanggungan pembayaran.</p>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-penjualan">🧾 Penjualan</button>
+    <button class="tab-btn" data-tab="tab-pelanggan">👤 Pelanggan</button>
+    <button class="tab-btn" data-tab="tab-produk">📦 Produk</button>
+  </div>
+
+  <!-- ================= TAB PENJUALAN ================= -->
+  <div id="tab-penjualan" class="tab-content active">
+    <div class="summary" id="summaryBox"></div>
+
+    <div class="card">
+      <h2>Catat Penjualan Baru</h2>
+      <form id="formPenjualan">
+        <div class="form-grid">
+          <div class="full">
+            <label>Pelanggan</label>
+            <select id="pPelanggan" required></select>
+          </div>
+          <div class="full">
+            <label>Produk</label>
+            <select id="pProduk" required></select>
+          </div>
+          <div>
+            <label>Jumlah</label>
+            <input type="number" id="pJumlah" min="1" value="1" required>
+          </div>
+          <div>
+            <label>Harga Satuan (Rp)</label>
+            <input type="number" id="pHarga" min="0" value="0" required>
+          </div>
+          <div>
+            <label>Tanggal</label>
+            <input type="date" id="pTanggal" required>
+          </div>
+          <div>
+            <label>Status Pembayaran</label>
+            <select id="pStatus">
+              <option value="tanggungan">Tanggungan (belum setor)</option>
+              <option value="lunas">Lunas</option>
+              <option value="sebagian">Sebagian</option>
+            </select>
+          </div>
+          <div class="full">
+            <label>Catatan</label>
+            <input type="text" id="pCatatan" placeholder="cth: kirim pagi, titip tetangga">
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">+ Simpan Penjualan</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Daftar Penjualan</h2>
+      <div style="overflow-x:auto">
+        <table id="tabelPenjualan">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Pelanggan</th>
+              <th>Produk</th>
+              <th>Jumlah</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Catatan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TAB PELANGGAN ================= -->
+  <div id="tab-pelanggan" class="tab-content">
+    <div class="card">
+      <h2>Tambah Pelanggan</h2>
+      <form id="formPelanggan">
+        <div class="form-grid">
+          <div>
+            <label>Nama</label>
+            <input type="text" id="cNama" required placeholder="cth: Bu Indah">
+          </div>
+          <div>
+            <label>Telepon</label>
+            <input type="text" id="cTelepon" placeholder="cth: 0812xxxx">
+          </div>
+          <div class="full">
+            <label>Alamat</label>
+            <input type="text" id="cAlamat" placeholder="cth: Jl. Melati No. 5">
+          </div>
+          <div class="full">
+            <label>Koordinat (lat, lng)</label>
+            <div class="coords-row">
+              <input type="text" id="cKoordinat" placeholder="cth: -6.200000, 106.816666">
+              <button type="button" class="btn btn-warn btn-small" id="btnLokasi">📍 Ambil Lokasi</button>
+            </div>
+            <div class="hint">Bisa isi manual atau klik "Ambil Lokasi" (butuh izin browser).</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">+ Simpan Pelanggan</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Daftar Pelanggan</h2>
+      <div style="overflow-x:auto">
+        <table id="tabelPelanggan">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Alamat</th>
+              <th>Koordinat</th>
+              <th>Telepon</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TAB PRODUK ================= -->
+  <div id="tab-produk" class="tab-content">
+    <div class="card">
+      <h2>Tambah Produk</h2>
+      <form id="formProduk">
+        <div class="form-grid">
+          <div>
+            <label>Nama Produk</label>
+            <input type="text" id="prNama" required placeholder="cth: Susu Botol 1L">
+          </div>
+          <div>
+            <label>Harga Default (Rp)</label>
+            <input type="number" id="prHarga" min="0" value="0" required>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">+ Simpan Produk</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Daftar Produk</h2>
+      <div style="overflow-x:auto">
+        <table id="tabelProduk">
+          <thead>
+            <tr>
+              <th>Nama Produk</th>
+              <th>Harga Default</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STORAGE HELPERS
+   ============================================================ */
+const DB = {
+  get(key) { try { return JSON.parse(localStorage.getItem(key)) || []; } catch(e){ return []; } },
+  set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+};
+const KEYS = { pelanggan:'cp_pelanggan', produk:'cp_produk', penjualan:'cp_penjualan' };
+
+let pelanggan = DB.get(KEYS.pelanggan);
+let produk = DB.get(KEYS.produk);
+let penjualan = DB.get(KEYS.penjualan);
+
+function saveAll() {
+  DB.set(KEYS.pelanggan, pelanggan);
+  DB.set(KEYS.produk, produk);
+  DB.set(KEYS.penjualan, penjualan);
+}
+
+/* ============================================================
+   UTIL
+   ============================================================ */
+function rupiah(n){ return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
+function hariIni(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   PELANGGAN
+   ============================================================ */
+const formPelanggan = document.getElementById('formPelanggan');
+
+document.getElementById('btnLokasi').addEventListener('click', () => {
+  if (!navigator.geolocation) { alert('Browser tidak mendukung geolokasi.'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('cKoordinat').value = lat + ', ' + lng;
+    },
+    err => alert('Gagal mengambil lokasi: ' + err.message),
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+});
+
+formPelanggan.addEventListener('submit', e => {
+  e.preventDefault();
+  const nama = document.getElementById('cNama').value.trim();
+  if (!nama) return;
+  pelanggan.push({
+    id: uid(),
+    nama,
+    alamat: document.getElementById('cAlamat').value.trim(),
+    koordinat: document.getElementById('cKoordinat').value.trim(),
+    telepon: document.getElementById('cTelepon').value.trim()
+  });
+  saveAll();
+  formPelanggan.reset();
+  renderAll();
+});
+
+function renderPelanggan() {
+  const tbody = document.querySelector('#tabelPelanggan tbody');
+  if (!pelanggan.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">Belum ada pelanggan.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = pelanggan.map(c => `
+    <tr>
+      <td><strong>${esc(c.nama)}</strong></td>
+      <td>${esc(c.alamat) || '-'}</td>
+      <td>${esc(c.koordinat) || '-'}</td>
+      <td>${esc(c.telepon) || '-'}</td>
+      <td><button class="btn btn-danger" onclick="hapusPelanggan('${c.id}')">Hapus</button></td>
+    </tr>
+  `).join('');
+}
+window.hapusPelanggan = id => {
+  if (!confirm('Hapus pelanggan ini? (data penjualan terkait tidak dihapus)')) return;
+  pelanggan = pelanggan.filter(c => c.id !== id);
+  saveAll(); renderAll();
+};
+
+/* ============================================================
+   PRODUK
+   ============================================================ */
+const formProduk = document.getElementById('formProduk');
+formProduk.addEventListener('submit', e => {
+  e.preventDefault();
+  const nama = document.getElementById('prNama').value.trim();
+  if (!nama) return;
+  produk.push({
+    id: uid(),
+    nama,
+    harga: Number(document.getElementById('prHarga').value) || 0
+  });
+  saveAll();
+  formProduk.reset();
+  renderAll();
+});
+
+function renderProduk() {
+  const tbody = document.querySelector('#tabelProduk tbody');
+  if (!produk.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty">Belum ada produk.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = produk.map(p => `
+    <tr>
+      <td><strong>${esc(p.nama)}</strong></td>
+      <td>${rupiah(p.harga)}</td>
+      <td><button class="btn btn-danger" onclick="hapusProduk('${p.id}')">Hapus</button></td>
+    </tr>
+  `).join('');
+}
+window.hapusProduk = id => {
+  if (!confirm('Hapus produk ini?')) return;
+  produk = produk.filter(p => p.id !== id);
+  saveAll(); renderAll();
+};
+
+/* ============================================================
+   PENJUALAN
+   ============================================================ */
+const formPenjualan = document.getElementById('formPenjualan');
+const selPelanggan = document.getElementById('pPelanggan');
+const selProduk = document.getElementById('pProduk');
+const inpJumlah = document.getElementById('pJumlah');
+const inpHarga = document.getElementById('pHarga');
+const inpTanggal = document.getElementById('pTanggal');
+const selStatus = document.getElementById('pStatus');
+const inpCatatan = document.getElementById('pCatatan');
+
+inpTanggal.value = hariIni();
+
+// Isi dropdown pelanggan & produk
+function isiDropdown() {
+  const curPel = selPelanggan.value;
+  const curPro = selProduk.value;
+
+  selPelanggan.innerHTML = pelanggan.length
+    ? pelanggan.map(c => `<option value="${c.id}">${esc(c.nama)}</option>`).join('')
+    : `<option value="">-- belum ada pelanggan --</option>`;
+
+  selProduk.innerHTML = produk.length
+    ? produk.map(p => `<option value="${p.id}" data-harga="${p.harga}">${esc(p.nama)}</option>`).join('')
+    : `<option value="">-- belum ada produk --</option>`;
+
+  if (curPel) selPelanggan.value = curPel;
+  if (curPro) selProduk.value = curPro;
+}
+
+// Auto-isi harga saat produk dipilih
+selProduk.addEventListener('change', () => {
+  const opt = selProduk.selectedOptions[0];
+  if (opt && opt.dataset.harga) inpHarga.value = opt.dataset.harga;
+});
+
+formPenjualan.addEventListener('submit', e => {
+  e.preventDefault();
+  const pelangganId = selPelanggan.value;
+  const produkId = selProduk.value;
+  const jumlah = Number(inpJumlah.value) || 0;
+  const harga = Number(inpHarga.value) || 0;
+
+  if (!pelangganId) { alert('Tambahkan pelanggan dulu di tab Pelanggan.'); return; }
+  if (!produkId)   { alert('Tambahkan produk dulu di tab Produk.'); return; }
+  if (jumlah <= 0) { alert('Jumlah harus lebih dari 0.'); return; }
+
+  penjualan.push({
+    id: uid(),
+    pelangganId,
+    produkId,
+    jumlah,
+    harga,
+    total: jumlah * harga,
+    tanggal: inpTanggal.value,
+    status: selStatus.value,
+    catatan: inpCatatan.value.trim(),
+    dibayar: selStatus.value === 'lunas' ? jumlah * harga : 0
+  });
+  saveAll();
+  // reset form (pertahankan tanggal & pelanggan terakhir)
+  inpJumlah.value = 1;
+  inpCatatan.value = '';
+  selStatus.value = 'tanggungan';
+  renderAll();
+});
+
+function namaPelanggan(id){ return (pelanggan.find(c => c.id === id)||{}).nama || '(terhapus)'; }
+function namaProduk(id){ return (produk.find(p => p.id === id)||{}).nama || '(terhapus)'; }
+
+function badgeStatus(status) {
+  const map = {
+    lunas: ['badge-lunas', 'Lunas'],
+    tanggungan: ['badge-tanggungan', 'Tanggungan'],
+    sebagian: ['badge-sebagian', 'Sebagian']
+  };
+  const [cls, txt] = map[status] || ['badge-tanggungan', status];
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+
+function renderPenjualan() {
+  const tbody = document.querySelector('#tabelPenjualan tbody');
+  const data = [...penjualan].sort((a,b) => (b.tanggal+a.id).localeCompare(a.tanggal+b.id));
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">Belum ada penjualan. Catat di form atas.</td></tr>`;
+  } else {
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${esc(p.tanggal)}</td>
+        <td><strong>${esc(namaPelanggan(p.pelangganId))}</strong></td>
+        <td>${esc(namaProduk(p.produkId))}</td>
+        <td>${p.jumlah}</td>
+        <td>${rupiah(p.total)}</td>
+        <td>${badgeStatus(p.status)}</td>
+        <td>${esc(p.catatan) || '-'}</td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            ${p.status !== 'lunas' ? `<button class="btn btn-success btn-small" onclick="lunaskan('${p.id}')">Lunas</button>` : ''}
+            <button class="btn btn-danger" onclick="hapusPenjualan('${p.id}')">Hapus</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+  renderSummary();
+}
+
+window.lunaskan = id => {
+  const p = penjualan.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'lunas';
+  p.dibayar = p.total;
+  saveAll(); renderAll();
+};
+window.hapusPenjualan = id => {
+  if (!confirm('Hapus catatan penjualan ini?')) return;
+  penjualan = penjualan.filter(p => p.id !== id);
+  saveAll(); renderAll();
+};
+
+function renderSummary() {
+  const totalOmzet = penjualan.reduce((s,p) => s + p.total, 0);
+  const totalTanggungan = penjualan
+    .filter(p => p.status !== 'lunas')
+    .reduce((s,p) => s + (p.total - (p.dibayar||0)), 0);
+  const totalLunas = penjualan
+    .filter(p => p.status === 'lunas')
+    .reduce((s,p) => s + p.total, 0);
+  const jumlahTanggungan = penjualan.filter(p => p.status !== 'lunas').length;
+
+  document.getElementById('summaryBox').innerHTML = `
+    <div class="box"><div class="label">Total Omzet</div><div class="value blue">${rupiah(totalOmzet)}</div></div>
+    <div class="box"><div class="label">Sudah Lunas</div><div class="value green">${rupiah(totalLunas)}</div></div>
+    <div class="box"><div class="label">Tanggungan (${jumlahTanggungan} transaksi)</div><div class="value red">${rupiah(totalTanggungan)}</div></div>
+  `;
+}
+
+/* ============================================================
+   RENDER SEMUA
+   ============================================================ */
+function renderAll() {
+  renderPelanggan();
+  renderProduk();
+  isiDropdown();
+  renderPenjualan();
+}
+
+// Init: jika kosong, beri contoh data
+if (!pelanggan.length && !produk.length && !penjualan.length) {
+  // biarkan kosong agar user mengisi sendiri
+}
+renderAll();
+</script>
+</body>
+</html>
